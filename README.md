@@ -4,6 +4,18 @@ Blueprint graph reader for Unreal Engine AI development via [Model Context Proto
 
 Gives AI assistants structural access to Blueprint graph data — nodes, pins, connections, execution flow, and variables — through a companion C++ plugin that serializes graph data to JSON.
 
+## Why?
+
+AI assistants can read C++ but are blind to Blueprint logic — the visual scripting that drives most UE gameplay code. This server exposes Blueprint graphs as structured data so AI agents can understand execution flow, trace connections, and reason about Blueprint architecture alongside C++ code.
+
+**Complements** (does not replace):
+- [unreal-source-mcp](https://github.com/tumourlove/unreal-source-mcp) — Engine-level source intelligence (full UE C++ and HLSL)
+- [unreal-project-mcp](https://github.com/tumourlove/unreal-project-mcp) — Project-level source intelligence (your C++ code)
+- [unreal-editor-mcp](https://github.com/tumourlove/unreal-editor-mcp) — Build diagnostics and editor log tools (Live Coding, error parsing, log search)
+- [unreal-api-mcp](https://github.com/nicobailon/unreal-api-mcp) by [Nico Bailon](https://github.com/nicobailon) — API surface lookup (signatures, #include paths, deprecation warnings)
+
+Together these servers give AI agents full-stack UE understanding: engine internals, API surface, your project code, build/runtime feedback, and Blueprint graph data.
+
 ## Prerequisites
 
 - **BlueprintReader plugin** installed in your UE project ([unreal-blueprint-reader](https://github.com/tumourlove/unreal-blueprint-reader))
@@ -61,6 +73,18 @@ Or run from local source during development:
 | `get_blueprint_flow` | Get linearized execution flow from an entry point |
 | `search_blueprint_nodes` | Search nodes by title, class, or function name |
 
+## Asset Path Format
+
+Tools accept Unreal asset paths (no file extension):
+
+| Location | Format | Example |
+|----------|--------|---------|
+| Project `Content/` | `/Game/Path/To/Blueprint` | `/Game/Blueprints/BP_Hero` |
+| Project `Plugins/` | `/PluginName/PluginName/Path/To/Asset` | `/InventorySystemX/InventorySystemX/Components/AC_HUD` |
+| Engine plugins | `/PluginName/Path/To/Asset` | `/EnginePlugin/Blueprints/BP_Example` |
+
+Marketplace packs copied into your project's `Content/` folder use the `/Game/` prefix like any other project content.
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -71,26 +95,37 @@ Or run from local source during development:
 | `UE_MULTICAST_PORT` | `6766` | UDP multicast port for editor discovery |
 | `UE_MULTICAST_BIND` | `127.0.0.1` | Local interface to bind multicast listener |
 
-## Complements
+## How It Works
 
-**Does not replace** — works alongside:
-- [unreal-source-mcp](https://github.com/tumourlove/unreal-source-mcp) — Engine-level source intelligence (full UE C++ and HLSL)
-- [unreal-project-mcp](https://github.com/tumourlove/unreal-project-mcp) — Project-level source intelligence (your C++ code)
-- [unreal-editor-mcp](https://github.com/tumourlove/unreal-editor-mcp) — Build diagnostics and editor log tools
-- [unreal-api-mcp](https://github.com/nicobailon/unreal-api-mcp) by [Nico Bailon](https://github.com/nicobailon) — API surface lookup
+1. **Editor Discovery** — Discovers the running UE editor via UDP multicast (the same protocol as UE's built-in `remote_execution.py`). Opens a TCP command channel to execute Python in the editor.
 
-Together these servers give AI agents full-stack UE understanding: engine internals, API surface, project code, build feedback, and now Blueprint graph data.
+2. **Plugin Bridge** — Sends Python commands to the editor that call `BlueprintReaderLibrary` static functions from the companion C++ plugin. The plugin serializes Blueprint graph data to JSON strings.
+
+3. **Serving** — FastMCP server exposes 5 tools over stdio. Claude Code manages the server lifecycle automatically.
+
+**No database, no indexing** — all data comes live from the running editor. The server is stateless; graphs are read on demand from whatever Blueprints are loaded.
 
 ## Adding to Your Project's CLAUDE.md
 
 ```markdown
-## Blueprint Graph Reading (via unreal-blueprint-mcp)
+## Blueprint Graph Reading (unreal-blueprint MCP)
 
-- Use `get_blueprint_graphs` to discover what graphs exist in a Blueprint
-- Use `get_blueprint_graph` to read full node/pin/connection data
-- Use `get_blueprint_flow` to understand execution order from an entry point
-- Use `search_blueprint_nodes` to find specific nodes by name
-- Asset paths use the format `/Game/Path/To/Blueprint` (no extension)
+Use `unreal-blueprint` MCP tools to read Blueprint graph data — nodes, pins,
+connections, execution flow, and variables. Requires **BlueprintReader** plugin
+and **Python Remote Execution** enabled in editor.
+
+| Tool | When |
+|------|------|
+| `get_blueprint_graphs` | Discover what graphs exist in a Blueprint |
+| `get_blueprint_graph` | Read full node/pin/connection data for a graph |
+| `get_blueprint_variables` | Get all variables with types, defaults, flags |
+| `get_blueprint_flow` | Understand execution order from an entry point |
+| `search_blueprint_nodes` | Find specific nodes by name/class/function |
+
+**Asset paths (no extension):**
+- Project `Content/`: `/Game/Path/To/Blueprint` (includes marketplace packs copied into Content/)
+- Project `Plugins/`: `/PluginName/PluginName/Path/To/Asset`
+- Engine plugins: `/PluginName/Path/To/Asset`
 ```
 
 ## Development
@@ -107,6 +142,13 @@ uv run pytest -v
 # Run server locally
 uv run unreal-blueprint-mcp
 ```
+
+## Requirements
+
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) (recommended) or pip
+- Unreal Engine 5.x with Python plugin and Remote Execution enabled
+- [BlueprintReader](https://github.com/tumourlove/unreal-blueprint-reader) C++ plugin
 
 ## License
 
