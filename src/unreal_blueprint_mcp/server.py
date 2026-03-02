@@ -95,6 +95,12 @@ def _call_plugin(func_name: str, **kwargs: str) -> dict:
         raw_result = result.get("result", "")
         output = str(raw_result).strip()
 
+    # UE may print RuntimeWarnings or log lines before our JSON output.
+    # Find the first '{' to extract the JSON payload.
+    json_start = output.find("{")
+    if json_start > 0:
+        output = output[json_start:]
+
     try:
         return json.loads(output)
     except json.JSONDecodeError:
