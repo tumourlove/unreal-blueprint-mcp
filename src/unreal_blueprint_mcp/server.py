@@ -77,15 +77,28 @@ def _call_plugin(func_name: str, **kwargs: str) -> dict:
         return {"error": True, "message": result.get("result", "Command failed")}
 
     # The plugin returns JSON as a string via print()
-    output = result.get("output", "").strip()
+    # UE remote execution may return output as a list of dicts or strings
+    raw_output = result.get("output", "")
+    if isinstance(raw_output, list):
+        # Each entry may be a dict with an "output" key, or a plain string
+        parts = []
+        for item in raw_output:
+            if isinstance(item, dict):
+                parts.append(item.get("output", str(item)))
+            else:
+                parts.append(str(item))
+        output = "\n".join(parts).strip()
+    else:
+        output = str(raw_output).strip()
     if not output:
         # Try the result field
-        output = result.get("result", "").strip()
+        raw_result = result.get("result", "")
+        output = str(raw_result).strip()
 
     try:
         return json.loads(output)
     except json.JSONDecodeError:
-        return {"error": True, "message": f"Invalid JSON from plugin: {output[:200]}"}
+        return {"error": True, "message": f"Invalid JSON from plugin: {output[:500]}"}
 
 
 def _format_error(data: dict) -> str | None:
