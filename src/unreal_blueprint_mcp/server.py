@@ -37,16 +37,35 @@ def _get_bridge() -> EditorBridge:
     return _bridge
 
 
+_ALLOWED_FUNCTIONS = {
+    "get_blueprint_graph_list",
+    "get_graph_data",
+    "get_blueprint_variables",
+    "get_execution_flow",
+    "search_nodes",
+}
+
+
+def _escape_py_string(s: str) -> str:
+    """Escape a string for safe interpolation into a Python string literal."""
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+
+
 def _call_plugin(func_name: str, **kwargs: str) -> dict:
     """Call a BlueprintReaderLibrary function via the editor Python bridge.
 
     Returns the parsed JSON response from the plugin.
     Raises EditorNotRunning if the editor is not available.
     """
+    if func_name not in _ALLOWED_FUNCTIONS:
+        return {"error": True, "message": f"Unknown function: {func_name}"}
+
     bridge = _get_bridge()
 
     # Build the Python command to run in the editor
-    args = ", ".join(f'{k}="{v}"' for k, v in kwargs.items())
+    args = ", ".join(
+        f'{k}="{_escape_py_string(v)}"' for k, v in kwargs.items()
+    )
     command = (
         "import unreal, json\n"
         f"result = unreal.BlueprintReaderLibrary.{func_name}({args})\n"
@@ -155,6 +174,8 @@ def get_blueprint_variables(asset_path: str) -> str:
     lines = ["Variables:"]
     for v in variables:
         flags = []
+        if not v.get("instance_editable", True):
+            flags.append("not_editable")
         if v.get("replicated"):
             flags.append("replicated")
         if v.get("expose_on_spawn"):

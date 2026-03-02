@@ -259,6 +259,54 @@ def test_call_plugin_handles_invalid_json():
         "output": "not json at all",
     }
     server._bridge = mock_bridge
-    result = server._call_plugin("some_func", asset_path="/Game/Test")
+    result = server._call_plugin("get_blueprint_graph_list", asset_path="/Game/Test")
     assert result.get("error") is True
     assert "Invalid JSON" in result.get("message", "")
+
+
+def test_call_plugin_rejects_unknown_function():
+    from unreal_blueprint_mcp import server
+    result = server._call_plugin("evil_function", asset_path="/Game/Test")
+    assert result.get("error") is True
+    assert "Unknown function" in result.get("message", "")
+
+
+def test_call_plugin_escapes_quotes_in_args():
+    from unreal_blueprint_mcp import server
+    mock_bridge = MagicMock()
+    mock_bridge.run_command.return_value = {
+        "success": True,
+        "output": '{"test": true}',
+    }
+    server._bridge = mock_bridge
+    server._call_plugin(
+        "get_blueprint_graph_list",
+        asset_path='/Game/Test"; import os; #',
+    )
+    call_args = mock_bridge.run_command.call_args
+    command = call_args[0][0]
+    # The injected quote should be escaped
+    assert '\\"' in command
+    assert 'import os' not in command.split('\n')[1].split('"')[0]
+
+
+def test_get_blueprint_variables_not_editable():
+    from unreal_blueprint_mcp import server
+    data = {
+        "variables": [
+            {
+                "name": "InternalVar",
+                "type": "int",
+                "default_value": "",
+                "category": "",
+                "instance_editable": False,
+                "replicated": False,
+                "expose_on_spawn": False,
+                "blueprint_read_only": False,
+                "transient": False,
+            },
+        ],
+    }
+    server._bridge = _mock_plugin_response(data)
+    result = server.get_blueprint_variables("/Game/BP_Test")
+    assert "not_editable" in result
