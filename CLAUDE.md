@@ -10,6 +10,7 @@ A two-part system: a C++ editor plugin (`unreal-blueprint-reader`) serializes Bl
 - `unreal-source-mcp` — Engine-level source intelligence
 - `unreal-project-mcp` — Project-level source intelligence
 - `unreal-editor-mcp` — Build diagnostics and editor log tools
+- `unreal-config-mcp` — Config/INI intelligence (inheritance chains, settings search, diff from defaults, CVars)
 - `unreal-api-mcp` — API surface (signatures, includes, deprecation)
 
 **We provide:** Structural access to Blueprint graphs — nodes, pins, connections, execution flow, variables.
