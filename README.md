@@ -92,13 +92,13 @@ Marketplace packs copied into your project's `Content/` folder use the `/Game/` 
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `UE_PROJECT_PATH` | `""` | Path to your Unreal project directory |
-| `UE_EDITOR_PYTHON_PORT` | `6776` | TCP port for editor Python bridge commands |
-| `UE_MULTICAST_GROUP` | `239.0.0.1` | UDP multicast group for editor discovery |
-| `UE_MULTICAST_PORT` | `6766` | UDP multicast port for editor discovery |
-| `UE_MULTICAST_BIND` | `127.0.0.1` | Local interface to bind multicast listener |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `UE_PROJECT_PATH` | Yes | Path to the UE project root (containing the .uproject file) |
+| `UE_EDITOR_PYTHON_PORT` | No | TCP port for editor Python bridge commands (default: `6776`) |
+| `UE_MULTICAST_GROUP` | No | UDP multicast group for editor discovery (default: `239.0.0.1`) |
+| `UE_MULTICAST_PORT` | No | UDP multicast port for editor discovery (default: `6766`) |
+| `UE_MULTICAST_BIND` | No | Local interface to bind multicast listener (default: `127.0.0.1`) |
 
 ## How It Works
 
