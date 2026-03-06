@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__nexus-tab-1__scratchpad_set",
+      "mcp__nexus-tab-1__spawn_session",
+      "mcp__nexus-tab-1__wait_for_workers",
+      "mcp__nexus-tab-1__merge_worker"
+    ]
+  }
+}
